@@ -52,15 +52,15 @@ while read -r REPO; do
         createBranchProtectionRule(input: {
           repositoryId: $repositoryId
           pattern: $branchPattern
-            allowsForcePushes: false
-            dismissesStaleReviews: false
-            isAdminEnforced: false
-            requireLastPushApproval: true
-            requiresApprovingReviews: true
-            requiredApprovingReviewCount: 1
-            requiresConversationResolution: true
-            requiresLinearHistory: true
-            requiresStatusChecks: true
+          allowsForcePushes: false
+          dismissesStaleReviews: false
+          isAdminEnforced: false
+          requireLastPushApproval: true
+          requiresApprovingReviews: true
+          requiredApprovingReviewCount: 1
+          requiresConversationResolution: true
+          requiresLinearHistory: true
+          requiresStatusChecks: true
         }) {
           branchProtectionRule {
             id # Retrieve the ID of the created rule
@@ -76,15 +76,15 @@ while read -r REPO; do
       mutation($branchProtectionRuleId:ID!) {
         updateBranchProtectionRule(input: {
           branchProtectionRuleId: $branchProtectionRuleId
-            allowsForcePushes: false
-            dismissesStaleReviews: false
-            isAdminEnforced: false
-            requireLastPushApproval: true
-            requiresApprovingReviews: true
-            requiredApprovingReviewCount: 1
-            requiresConversationResolution: true
-            requiresLinearHistory: true
-            requiresStatusChecks: true
+          allowsForcePushes: false
+          dismissesStaleReviews: false
+          isAdminEnforced: false
+          requireLastPushApproval: true
+          requiresApprovingReviews: true
+          requiredApprovingReviewCount: 1
+          requiresConversationResolution: true
+          requiresLinearHistory: true
+          requiresStatusChecks: true
         }) {
           branchProtectionRule {
             id
