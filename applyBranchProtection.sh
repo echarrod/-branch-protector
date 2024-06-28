@@ -24,29 +24,33 @@ fi
 
 IFS=',' read -ra BRANCH_PATTERNS <<< "$BRANCH_PATTERN_LIST"
 for BRANCH_PATTERN in "${BRANCH_PATTERNS[@]}"; do
-  while read -r REPO; do
-    echo ""
-    echo "Working with ${REPO}..."
-    REPO_ID=$(echo "$REPO" | jq -r .node_id)     # Use .node_id for repo ID
-    REPO_NAME=$(echo "$REPO" | jq -r .name)
+  while IFS= read -r line; do
+    REPO_ID=$(echo "$line" | jq -r .id)         # Use .id for repository ID in this context
+    REPO_NAME=$(echo "$line" | jq -r .name)
+
+    # Check if repository exists
+    if ! gh repo view "$REPO_NAME" &> /dev/null; then
+      echo "Repository $REPO_NAME not found. Skipping..."
+      continue  # Skip to the next repository
+    fi
 
     # Get the existing rule id, if any
     RULE_ID=$(gh api graphql -f query="
-    query ($owner: String!, $repo: String!) {
-      repository(owner: $owner, name: $repo) {
+    query (\$owner: String!, \$repo: String!) {
+      repository(owner: \$owner, name: \$repo) {
         branchProtectionRules(first: 100) {
-          nodes { # Access the nodes array directly
+          nodes {
             id
             pattern
           }
         }
       }
-    }" -f owner="$OWNER" -f repo="$REPO_NAME" | jq -r '.data.repository.branchProtectionRules.nodes[] | select( .pattern == "'"$BRANCH_PATTERN"'" ) | .id') # Use .nodes instead of .edges
+    }" -f owner="$OWNER" -f repo="$REPO_NAME" | jq -r '.data.repository.branchProtectionRules.nodes[] | select( .pattern == "'"$BRANCH_PATTERN"'" ) | .id')
 
     if [[ -z "$RULE_ID" ]]; then
       echo "No existing rule found for pattern '$BRANCH_PATTERN'. Creating a new one..."
 
-      # Create a new rule since none exists
+      # Create a new rule since none exists (ignore errors if it already exists)
       gh api graphql -f query="
         mutation(\$repositoryId:ID!, \$branchPattern:String!) {
           createBranchProtectionRule(input: {
@@ -66,7 +70,7 @@ for BRANCH_PATTERN in "${BRANCH_PATTERNS[@]}"; do
               id # Retrieve the ID of the created rule
             }
           }
-        }" -f repositoryId="$REPO_ID" -f branchPattern="$BRANCH_PATTERN"
+        }" -f repositoryId="$REPO_ID" -f branchPattern="$BRANCH_PATTERN" || true
 
     else
       echo "Updating existing rule with ID '$RULE_ID'..."
@@ -92,6 +96,5 @@ for BRANCH_PATTERN in "${BRANCH_PATTERNS[@]}"; do
           }
         }" -f branchProtectionRuleId="$RULE_ID"
     fi
-
-done <<< "$(gh repo list "$OWNER" --no-archived --json name,node_id --limit $LIMIT | jq -c '.[] | select( .name? | match ("'"${FILTER}"'"))')" # Use .node_id instead of .id
+  done <<< "$(gh repo list "$OWNER" --no-archived --json name,node_id --limit $LIMIT | jq -c '.[] | select( .name? | match ("'"${FILTER}"'"))')" # Use .node_id instead of .id
 done
