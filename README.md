@@ -1,1 +1,1 @@
-# -branch-protector
+# GitHub Branch Protector
